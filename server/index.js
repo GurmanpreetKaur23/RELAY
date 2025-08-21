@@ -21,6 +21,5 @@ app.use('/threads', threadRoutes);
 const commentRoutes = require("./routes/commentRoutes");
 app.use("/api/threads", commentRoutes);
 
-
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
