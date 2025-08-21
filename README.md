@@ -179,3 +179,81 @@ Example:
 ```json
 { "message": "Thread deleted successfully" }
 ```
+
+---
+
+### 6️⃣ Add a Comment
+
+**POST:** `http://localhost:5000/api/threads/<threadId>/comments`
+
+Example:
+`POST http://localhost:5000/api/threads/68a72336e25c76cf123e1b71/comments`
+
+**Body (JSON):**
+
+```
+{
+  "text": "This is my first comment!",
+  "author": "John Doe"
+}
+```
+
+**Response:**
+
+```json
+{
+  "message": "Comment added successfully",
+  "comment": {
+    "thread": "68a72336e25c76cf123e1b71",
+    "text": "This is my first comment!",
+    "author": "John Doe",
+    "_id": "68a7312a60dee53995cc98f8",
+    "createdAt": "2025-08-21T14:46:02.539Z",
+    "updatedAt": "2025-08-21T14:46:02.539Z",
+    "__v": 0
+  }
+}
+```
+
+---
+
+### 7️⃣ Get All Comments for a Thread
+
+**GET:** `http://localhost:5000/api/threads/<threadId>/comments`
+
+Example:
+`GET http://localhost:5000/api/threads/68a72336e25c76cf123e1b71/comments`
+
+**Response:**
+
+```json
+[
+  {
+    "_id": "68a7312a60dee53995cc98f8",
+    "thread": "68a72336e25c76cf123e1b71",
+    "text": "Please someone update me as well",
+    "author": "Alice Bolton",
+    "createdAt": "2025-08-21T14:46:02.539Z",
+    "updatedAt": "2025-08-21T14:46:02.539Z",
+    "__v": 0
+  },
+  {
+    "_id": "68a72d08d1d30d802e694775",
+    "thread": "68a72336e25c76cf123e1b71",
+    "text": "Following",
+    "author": "Peter Parker",
+    "createdAt": "2025-08-21T14:28:24.512Z",
+    "updatedAt": "2025-08-21T14:28:24.512Z",
+    "__v": 0
+  },
+  {
+    "_id": "68a72cdbd1d30d802e694772",
+    "thread": "68a72336e25c76cf123e1b71",
+    "text": "This is my first comment!",
+    "author": "John Doe",
+    "createdAt": "2025-08-21T14:27:39.897Z",
+    "updatedAt": "2025-08-21T14:27:39.897Z",
+    "__v": 0
+  }
+]
+```
