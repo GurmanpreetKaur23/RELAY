@@ -1,51 +1,101 @@
+const express = require('express');
+const router = express.Router();
 const jwt = require('jsonwebtoken');
 const User = require('../models/user');
+const auth = require('../middleware/auth');
 
-/**
- * Authentication middleware to verify JWT tokens
- * @param {Object} req 
- * @param {Object} res 
- * @param {Function} next 
- */
-const auth = async (req, res, next) => {
+// @route   POST /auth/register
+// @desc    Register a new user
+// @access  Public
+router.post('/register', async (req, res) => {
     try {
-        // Get token from header
-        const authHeader = req.header('Authorization');
+        const { username, email, password, firstName, lastName } = req.body;
+
+        // Check if user already exists
+        const existingUser = await User.findOne({
+            $or: [{ email }, { username }]
+        });
+
+        if (existingUser) {
+            if (existingUser.email === email) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'User with this email already exists'
+                });
+            }
+            if (existingUser.username === username) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Username is already taken'
+                });
+            }
+        }
+
+        // Create new user
+        const user = new User({
+            username,
+            email,
+            password,
+            firstName,
+            lastName
+        });
+
+        await user.save();
+
+        // Create JWT token
+        const token = jwt.sign(
+            { userId: user._id },
+            process.env.JWT_SECRET,
+            { expiresIn: process.env.JWT_EXPIRE }
+        );
+
+        res.status(201).json({
+            success: true,
+            message: 'User registered successfully',
+            token,
+            user: user.getPublicProfile()
+        });
+
+    } catch (error) {
+        console.error('Registration error:', error);
         
-        if (!authHeader) {
-            return res.status(401).json({
+        // Handle validation errors
+        if (error.name === 'ValidationError') {
+            const errors = Object.values(error.errors).map(err => err.message);
+            return res.status(400).json({
                 success: false,
-                message: 'No token provided, authorization denied'
+                message: 'Validation failed',
+                errors
             });
         }
 
-        // Check if token starts with 'Bearer '
-        if (!authHeader.startsWith('Bearer ')) {
-            return res.status(401).json({
+        res.status(500).json({
+            success: false,
+            message: 'Server error during registration'
+        });
+    }
+});
+
+// @route   POST /auth/login
+// @desc    Authenticate user and get token
+// @access  Public
+router.post('/login', async (req, res) => {
+    try {
+        const { email, password } = req.body;
+
+        if (!email || !password) {
+            return res.status(400).json({
                 success: false,
-                message: 'Invalid token format. Use Bearer token.'
+                message: 'Please provide email and password'
             });
         }
 
-        // Extract token
-        const token = authHeader.substring(7); // Remove 'Bearer ' prefix
-
-        if (!token) {
-            return res.status(401).json({
-                success: false,
-                message: 'No token provided, authorization denied'
-            });
-        }
-
-        // Verify token
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        
-        // Check if user still exists
-        const user = await User.findById(decoded.userId);
+        // Check if user exists
+        const user = await User.findOne({ email }).select('+password');
         if (!user) {
             return res.status(401).json({
                 success: false,
-                message: 'Token is invalid - user not found'
+                message: 'Invalid credentials'
             });
         }
 
@@ -53,41 +103,129 @@ const auth = async (req, res, next) => {
         if (!user.isActive) {
             return res.status(401).json({
                 success: false,
-                message: 'Account is deactivated'
+                message: 'Account is deactivated. Please contact support.'
             });
         }
 
-        // Add user info to request
-        req.user = {
-            userId: decoded.userId,
-            username: user.username,
-            email: user.email
-        };
+        // Check password
+        const isPasswordValid = await user.comparePassword(password);
+        if (!isPasswordValid) {
+            return res.status(401).json({
+                success: false,
+                message: 'Invalid credentials'
+            });
+        }
 
-        next();
+        // Update last login
+        user.lastLogin = new Date();
+        await user.save();
+
+        // Create JWT token
+        const token = jwt.sign(
+            { userId: user._id },
+            process.env.JWT_SECRET,
+            { expiresIn: process.env.JWT_EXPIRE }
+        );
+
+        res.json({
+            success: true,
+            message: 'Login successful',
+            token,
+            user: user.getPublicProfile()
+        });
 
     } catch (error) {
-        console.error('Auth middleware error:', error);
+        console.error('Login error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Server error during login'
+        });
+    }
+});
 
-        if (error.name === 'JsonWebTokenError') {
-            return res.status(401).json({
+
+// @route   GET /auth/me
+// @desc    Get current user profile
+// @access  Private
+router.get('/me', auth, async (req, res) => {
+    try {
+        const user = await User.findById(req.user.userId);
+        if (!user) {
+            return res.status(404).json({
                 success: false,
-                message: 'Invalid token'
+                message: 'User not found'
             });
         }
 
-        if (error.name === 'TokenExpiredError') {
-            return res.status(401).json({
+        res.json({
+            success: true,
+            user: user.getPublicProfile()
+        });
+    } catch (error) {
+        console.error('Get profile error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Server error'
+        });
+    }
+});
+
+// @route   PUT /auth/profile
+// @desc    Update user profile
+// @access  Private
+router.put('/profile', auth, async (req, res) => {
+    try {
+        const { firstName, lastName, bio, profilePicture } = req.body;
+        
+        const user = await User.findById(req.user.userId);
+        if (!user) {
+            return res.status(404).json({
                 success: false,
-                message: 'Token has expired'
+                message: 'User not found'
+            });
+        }
+
+        // Update fields if provided
+        if (firstName) user.firstName = firstName;
+        if (lastName) user.lastName = lastName;
+        if (bio !== undefined) user.bio = bio;
+        if (profilePicture !== undefined) user.profilePicture = profilePicture;
+
+        await user.save();
+
+        res.json({
+            success: true,
+            message: 'Profile updated successfully',
+            user: user.getPublicProfile()
+        });
+
+    } catch (error) {
+        console.error('Update profile error:', error);
+        
+        if (error.name === 'ValidationError') {
+            const errors = Object.values(error.errors).map(err => err.message);
+            return res.status(400).json({
+                success: false,
+                message: 'Validation failed',
+                errors
             });
         }
 
         res.status(500).json({
             success: false,
-            message: 'Server error in authentication'
+            message: 'Server error'
         });
     }
-};
+});
 
-module.exports = auth;
+// @route   POST /auth/logout
+// @desc    Logout user (client-side token removal)
+// @access  Private
+router.post('/logout', auth, (req, res) => {
+    res.json({
+        success: true,
+        message: 'Logout successful'
+    });
+});
+
+module.exports = router;
