@@ -1,76 +1,95 @@
-# Online Discussion Forum 
+# Relay – Backend API
 
-This is a **MERN Stack Project** for an Online Discussion Forum (like a mini StackOverflow/Reddit).
-It supports **CRUD operations for threads** (create, read, update, delete) and contains features such as **user authentication, replies, upvotes/downvotes, search, and filters by tags, category, most recent, most upvoted**.
-
----
-
-## 🚀 Tech Stack
-
-* **Node.js + Express** → Backend framework
-* **MongoDB + Mongoose** → Database
-* **dotenv** → Environment variables
-* **CORS + body-parser** → Middleware
+Relay is a backend API built with **Node.js, Express, and MongoDB**.  
+It powers a simple discussion platform where users can create threads and comments, secured with JWT authentication.  
 
 ---
 
-## ⚙️ Installation & Setup
+## ✨ Features
+- User registration and login with hashed passwords (**bcrypt**)  
+- JWT-based authentication & middleware for route protection  
+- Create, fetch, and manage discussion threads  
+- Add and fetch comments under threads  
+- Centralized error handling  
+- Clean, modular project structure  
 
-1. **Clone the repo**
+---
 
-   ```bash
-   git clone https://github.com/GurmanpreetKaur23/RELAY
-   cd RELAY
-   ```
+## 🛠️ Tech Stack
+- **Backend:** Node.js, Express  
+- **Database:** MongoDB (via Mongoose)  
+- **Authentication:** JSON Web Tokens (JWT)  
+- **Other Tools:** bcrypt, dotenv, cors  
 
-2. **Install dependencies**
+---
 
-   ```bash
-   npm install
-   ```
+## 🚀 Getting Started
 
-3. **Setup environment variables**
-   Create a `.env` file in the project root:
+### 1. Clone the Repository
+```markdown
+git clone [RELAY](https://github.com/GurmanpreetKaur23/RELAY.git)
+cd relay/server
+````
 
-   ```
-   MONGO_URI=mongodb://localhost:27017/forumDB
-   PORT=5000
-   ```
+### 2. Install Dependencies
 
-   > Replace `mongodb://localhost:27017/forumDB` with your actual MongoDB connection string if using MongoDB Atlas.
+```bash
+npm install
+```
 
-4. **Run the server**
+### 3. Configure Environment
 
-   ```bash
-   npm start
-   ```
+Create a `.env` file in the `server/` folder and add:
 
-   You should see:
+```env
+PORT=5000
+MONGODB_URI=mongodb://localhost:27017/relay
+SECRET=your_jwt_secret
+```
 
-   ```
-   MongoDB connected
-   Server running on port 5000
-   ```
+### 4. Run the Server
+
+Run in development mode (with **nodemon**):
+
+```bash
+npm run dev
+```
+
+Or normal mode:
+
+```bash
+npm start
+```
+
+Server should now be running at:
+👉 `http://localhost:5000`
 
 ---
 
 ## 📌 API Endpoints
 
-Base URL: `http://localhost:5000/threads`
+### 🔑 Authentication
 
-### 1️⃣ Create a Thread
+#### Register
 
-**POST** `/threads`
-
-**Request Body (JSON):**
+`POST /api/register`
 
 ```json
 {
-  "title": "How to learn React?",
-  "description": "I want resources to learn React as a beginner.",
-  "tags": ["react", "javascript", "frontend"],
-  "category": "Programming",
-  "createdBy": "student123"
+  "username": "Gunn",
+  "email": "gunn@gmail.com",
+  "password": "mypassword123"
+}
+```
+
+#### Login
+
+`POST /api/login`
+
+```json
+{
+  "email": "gunn@gmail.com",
+  "password": "mypassword123"
 }
 ```
 
@@ -78,182 +97,93 @@ Base URL: `http://localhost:5000/threads`
 
 ```json
 {
-  "_id": "64ff...",
-  "title": "How to learn React?",
-  "description": "I want resources to learn React as a beginner.",
-  "tags": ["react", "javascript", "frontend"],
-  "category": "Programming",
-  "createdBy": "student123",
-  "createdAt": "2025-08-21T12:34:56.789Z",
-  "replies": [],
-  "votes": []
+  "token": "jwt_token_here"
 }
+```
+
+Add the token in request headers:
+
+```
+Authorization: Bearer <token>
 ```
 
 ---
 
-### 2️⃣ Get All Threads
+### 📝 Threads
 
-**GET** `/threads`
+#### Create Thread
 
-**Response:**
+`POST /api/threads`
 
 ```json
-[
-  {
-    "_id": "64ff...",
-    "title": "How to learn React?",
-    "description": "I want resources to learn React as a beginner.",
-    "tags": ["react", "javascript"],
-    "category": "Programming",
-    "createdBy": "student123",
-    "createdAt": "2025-08-21T12:34:56.789Z"
-  }
-]
+{
+  "title": "Exam Updates",
+  "description": "Any news about exam dates?"
+}
+```
+
+#### Get All Threads
+
+`GET /api/threads`
+
+#### Get Single Thread
+
+`GET /api/threads/:id`
+
+---
+
+### 💬 Comments
+
+#### Add Comment
+
+`POST /api/threads/:threadId/comments`
+
+```json
+{
+  "text": "Following this thread!",
+  "author": "Gunn"
+}
+```
+
+#### Get Comments
+
+`GET /api/threads/:threadId/comments`
+
+---
+
+## 📂 Project Structure
+
+```
+server/
+│── controllers/    # Handles business logic
+│── models/         # Mongoose schemas
+│── routes/         # API route definitions
+│── index.js       # App entry point
+│── package.json    # Scripts & dependencies
+│── .env            # Environment variables
 ```
 
 ---
 
-### 3️⃣ Get Single Thread by ID
+## 🧑‍💻 Development Notes
 
-**GET** `/threads/:id`
-
-Example:
-`GET http://localhost:5000/threads/64ff123456`
-
-**Response:**
-
-```json
-{
-  "_id": "64ff...",
-  "title": "How to learn React?",
-  "description": "I want resources to learn React as a beginner.",
-  "tags": ["react", "javascript"],
-  "category": "Programming",
-  "createdBy": "student123",
-  "createdAt": "2025-08-21T12:34:56.789Z",
-  "replies": [],
-  "votes": []
-}
-```
+* Passwords are hashed with bcrypt before saving
+* JWT tokens signed using secret from `.env`
+* Middleware ensures only authenticated users can access protected routes
+* Error handling is centralized and returns meaningful messages
 
 ---
 
-### 4️⃣ Update a Thread
+## 🤝 Contributing
 
-**PUT** `/threads/:id`
-
-**Request Body (JSON):**
-
-```json
-{
-  "title": "Best way to learn React?",
-  "description": "Should I start with docs, YouTube, or a course?",
-  "tags": ["react", "learning"],
-  "category": "Frontend"
-}
-```
-
-**Response:**
-
-```json
-{
-  "_id": "64ff...",
-  "title": "Best way to learn React?",
-  "description": "Should I start with docs, YouTube, or a course?",
-  "tags": ["react", "learning"],
-  "category": "Frontend",
-  "createdBy": "student123",
-  "createdAt": "2025-08-21T12:34:56.789Z"
-}
-```
+1. Fork this repository
+2. Create a new branch (`feature/new-feature`)
+3. Commit your changes (`git commit -m "Add new feature"`)
+4. Push your branch (`git push origin feature/new-feature`)
+5. Open a Pull Request
 
 ---
 
-### 5️⃣ Delete a Thread
+## 📜 License
 
-**DELETE** `/threads/:id`
-
-**Response:**
-
-```json
-{ "message": "Thread deleted successfully" }
-```
-
----
-
-### 6️⃣ Add a Comment
-
-**POST:** `http://localhost:5000/api/threads/<threadId>/comments`
-
-Example:
-`POST http://localhost:5000/api/threads/68a72336e25c76cf123e1b71/comments`
-
-**Body (JSON):**
-
-```
-{
-  "text": "This is my first comment!",
-  "author": "John Doe"
-}
-```
-
-**Response:**
-
-```json
-{
-  "message": "Comment added successfully",
-  "comment": {
-    "thread": "68a72336e25c76cf123e1b71",
-    "text": "This is my first comment!",
-    "author": "John Doe",
-    "_id": "68a7312a60dee53995cc98f8",
-    "createdAt": "2025-08-21T14:46:02.539Z",
-    "updatedAt": "2025-08-21T14:46:02.539Z",
-    "__v": 0
-  }
-}
-```
-
----
-
-### 7️⃣ Get All Comments for a Thread
-
-**GET:** `http://localhost:5000/api/threads/<threadId>/comments`
-
-Example:
-`GET http://localhost:5000/api/threads/68a72336e25c76cf123e1b71/comments`
-
-**Response:**
-
-```json
-[
-  {
-    "_id": "68a7312a60dee53995cc98f8",
-    "thread": "68a72336e25c76cf123e1b71",
-    "text": "Please someone update me as well",
-    "author": "Alice Bolton",
-    "createdAt": "2025-08-21T14:46:02.539Z",
-    "updatedAt": "2025-08-21T14:46:02.539Z",
-    "__v": 0
-  },
-  {
-    "_id": "68a72d08d1d30d802e694775",
-    "thread": "68a72336e25c76cf123e1b71",
-    "text": "Following",
-    "author": "Peter Parker",
-    "createdAt": "2025-08-21T14:28:24.512Z",
-    "updatedAt": "2025-08-21T14:28:24.512Z",
-    "__v": 0
-  },
-  {
-    "_id": "68a72cdbd1d30d802e694772",
-    "thread": "68a72336e25c76cf123e1b71",
-    "text": "This is my first comment!",
-    "author": "John Doe",
-    "createdAt": "2025-08-21T14:27:39.897Z",
-    "updatedAt": "2025-08-21T14:27:39.897Z",
-    "__v": 0
-  }
-]
-```
+MIT License © 2025 — Relay Project
