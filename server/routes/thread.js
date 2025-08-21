@@ -63,5 +63,62 @@ router.get('/', async (req, res) => {
     }
 });
 
+// Update a thread
+router.put('/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { title, description, tags, category } = req.body;
+
+        const updatedThread = await Thread.findByIdAndUpdate(
+            id,
+            { title, description, tags, category },
+            { new: true }
+        );
+
+        if (!updatedThread) {
+            return res.status(404).json({ message: 'Thread not found' });
+        }
+
+        res.json(updatedThread);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+// Delete a thread
+router.delete('/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const deletedThread = await Thread.findByIdAndDelete(id);
+
+        if (!deletedThread) {
+            return res.status(404).json({ message: 'Thread not found' });
+        }
+
+        res.json({ message: 'Thread deleted successfully' });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+// Get single thread by ID
+router.get('/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const thread = await Thread.findById(id);
+
+    if (!thread) {
+      return res.status(404).json({ message: 'Thread not found' });
+    }
+
+    res.json(thread);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
 
 module.exports = router;
